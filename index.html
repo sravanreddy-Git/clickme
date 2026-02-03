@@ -158,6 +158,8 @@
       e.preventDefault();
       moveNoButton();
     });
+    // Position NO button once when page loads (fixes refresh issue)
+    window.addEventListener("load", moveNoButton);
   </script>
 </body>
 </html>
