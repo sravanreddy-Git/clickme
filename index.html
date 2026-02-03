@@ -130,7 +130,7 @@
       const yesCY = (yesRect.top  - areaRect.top)  + yesRect.height / 2;
 
       // Minimum distance from YES center (increase to make it more dramatic)
-      const minDist = 170;
+      const minDist = 200;
 
       for (let i = 0; i < 60; i++) {
         const left = rand(padding, Math.max(padding, maxLeft));
@@ -175,7 +175,7 @@
       const cy = rect.top + rect.height / 2;
       const distance = Math.hypot(e.clientX - cx, e.clientY - cy);
 
-      if (distance < 110) moveNoButton();
+      if (distance < 170) moveNoButton();
     });
 
     // Desktop: move when trying to click
