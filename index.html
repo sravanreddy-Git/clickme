@@ -8,10 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Poppins", "Comic Sans MS", sans-serif;
-    }
+    * { box-sizing: border-box; font-family: "Poppins", "Comic Sans MS", sans-serif; }
 
     body {
       margin: 0;
@@ -25,7 +22,7 @@
 
     .card {
       background: white;
-      width: 520px;
+      width: 560px;
       max-width: 100%;
       padding: 60px 50px;
       border-radius: 36px;
@@ -35,25 +32,17 @@
       overflow: hidden;
     }
 
-    h1 {
-      margin: 0 0 18px;
-      font-size: 2.3rem;
-      color: #ff3b7a;
-    }
+    h1 { margin: 0 0 18px; font-size: 2.3rem; color: #ff3b7a; }
+    p  { margin: 0 0 26px; font-size: 1.1rem; color: #333; }
 
-    p {
-      margin: 0 0 30px;
-      font-size: 1.1rem;
-      color: #333;
-    }
-
-    /* Button playground area */
+    /* Bigger playground so NO can move around a lot */
     .btn-area {
       position: relative;
-      width: 320px;
-      height: 70px;
+      width: min(460px, 100%);
+      height: 170px;              /* <<< BIGGER */
       margin: 0 auto;
-      touch-action: none; /* lets us detect touchmove reliably */
+      border-radius: 18px;
+      touch-action: none;         /* required for touchmove */
     }
 
     button {
@@ -66,32 +55,27 @@
       transition: transform 0.15s ease;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      position: absolute;
+      top: 0;
     }
 
+    /* Start side-by-side */
     #yes {
       background: #ff3b7a;
       color: white;
-      position: absolute;
-      left: 0;
-      top: 0;
+      left: 20px;
+      top: 18px;
     }
 
     #no {
       background: #f2f2f2;
       color: #333;
-      position: absolute;
-      right: 0;
-      top: 0;
+      left: 240px;   /* Start beside yes */
+      top: 18px;
     }
 
     .hidden { display: none; }
-
-    .msg {
-      margin-top: 22px;
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #111;
-    }
+    .msg { margin-top: 22px; font-size: 1.2rem; font-weight: 600; color: #111; }
   </style>
 </head>
 
@@ -111,9 +95,9 @@
   </div>
 
   <script>
-    const yesBtn = document.getElementById("yes");
-    const noBtn  = document.getElementById("no");
-    const msg    = document.getElementById("message");
+    const yesBtn  = document.getElementById("yes");
+    const noBtn   = document.getElementById("no");
+    const msg     = document.getElementById("message");
     const btnArea = document.getElementById("btnArea");
 
     function popConfetti() {
@@ -125,30 +109,44 @@
       popConfetti();
     });
 
-    // Random helper
     function rand(min, max) {
       return Math.random() * (max - min) + min;
     }
 
-    // Move NO inside btnArea and avoid overlapping YES
+    // Move NO to a random spot inside btn-area,
+    // and keep it away from YES (so it doesn't juggle beside it)
     function moveNoButton() {
       const areaRect = btnArea.getBoundingClientRect();
-      const noRect = noBtn.getBoundingClientRect();
-      const yesRect = yesBtn.getBoundingClientRect();
-      const padding = 6;
+      const noRect   = noBtn.getBoundingClientRect();
+      const yesRect  = yesBtn.getBoundingClientRect();
 
-      const maxLeft = areaRect.width - noRect.width - padding;
+      const padding = 10;
+
+      const maxLeft = areaRect.width  - noRect.width  - padding;
       const maxTop  = areaRect.height - noRect.height - padding;
 
-      // yes position in btnArea coords
-      const yesLeft = yesRect.left - areaRect.left;
-      const yesTop  = yesRect.top  - areaRect.top;
-      const yesRight = yesLeft + yesRect.width;
-      const yesBottom = yesTop + yesRect.height;
+      // YES center (relative to btnArea)
+      const yesCX = (yesRect.left - areaRect.left) + yesRect.width / 2;
+      const yesCY = (yesRect.top  - areaRect.top)  + yesRect.height / 2;
 
-      for (let i = 0; i < 30; i++) {
+      // Minimum distance from YES center (increase to make it more dramatic)
+      const minDist = 170;
+
+      for (let i = 0; i < 60; i++) {
         const left = rand(padding, Math.max(padding, maxLeft));
         const top  = rand(padding, Math.max(padding, maxTop));
+
+        // NO center
+        const noCX = left + noRect.width / 2;
+        const noCY = top  + noRect.height / 2;
+
+        const dist = Math.hypot(noCX - yesCX, noCY - yesCY);
+
+        // also avoid overlapping YES
+        const yesLeft = yesRect.left - areaRect.left;
+        const yesTop  = yesRect.top  - areaRect.top;
+        const yesRight = yesLeft + yesRect.width;
+        const yesBottom = yesTop + yesRect.height;
 
         const noLeft = left;
         const noTop = top;
@@ -158,42 +156,41 @@
         const overlaps =
           !(noRight < yesLeft || noLeft > yesRight || noBottom < yesTop || noTop > yesBottom);
 
-        if (!overlaps) {
+        if (!overlaps && dist > minDist) {
           noBtn.style.left = `${left}px`;
           noBtn.style.top  = `${top}px`;
-          noBtn.style.right = "auto";
           return;
         }
       }
 
-      // fallback
+      // fallback if somehow can't find a perfect spot
       noBtn.style.left = `${Math.max(padding, maxLeft)}px`;
-      noBtn.style.top  = `${padding}px`;
-      noBtn.style.right = "auto";
+      noBtn.style.top  = `${Math.max(padding, maxTop)}px`;
     }
 
-    // Desktop: move when cursor comes near
+    // Desktop: move when cursor is near NO
     document.addEventListener("mousemove", (e) => {
       const rect = noBtn.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const distance = Math.hypot(e.clientX - cx, e.clientY - cy);
 
-      if (distance < 90) moveNoButton();
+      if (distance < 110) moveNoButton();
     });
 
-    // Mobile + Desktop: move when they try to click/tap
+    // Desktop: move when trying to click
     noBtn.addEventListener("mousedown", (e) => {
       e.preventDefault();
       moveNoButton();
     });
 
+    // Mobile: move when trying to tap
     noBtn.addEventListener("touchstart", (e) => {
       e.preventDefault();
       moveNoButton();
     }, { passive: false });
 
-    // ✅ Mobile: move when finger comes near (touchmove)
+    // Mobile: move when finger comes near NO inside the area
     btnArea.addEventListener("touchmove", (e) => {
       const t = e.touches[0];
       if (!t) return;
@@ -204,8 +201,7 @@
 
       const distance = Math.hypot(t.clientX - cx, t.clientY - cy);
 
-      if (distance < 110) {
-        // prevent scrolling inside this area and move the button
+      if (distance < 140) {
         e.preventDefault();
         moveNoButton();
       }
